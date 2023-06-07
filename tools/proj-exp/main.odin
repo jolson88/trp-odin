@@ -29,7 +29,7 @@ main :: proc() {
     p := parser.default_parser()
     ok = parser.parse_file(&p, &file)
     if !ok || file.syntax_error_count > 0 {
-        fmt.println("Error: Could not parse file! Please ensure this file is a valid Odin file")
+        fmt.println("Error: Could not parse file!")
         return
     }
 
@@ -37,7 +37,18 @@ main :: proc() {
 }
 
 Printer :: struct {
+    // TODO: Turn into reference instead
     prepend: strings.Builder,
+}
+
+printlnf :: proc(p: ^Printer, s: string, args: ..any) {
+    using strings
+    pp_line := fmt.tprintf("%s%s\n", to_string(p.prepend), fmt.tprintf(s, ..args))
+    fmt.print(pp_line)
+}
+
+println :: proc(p: ^Printer, s: string) {
+    fmt.printf("%s%s\n", strings.to_string(p.prepend), s)
 }
 
 pretty_print_file :: proc(file: ^ast.File) {
@@ -45,11 +56,13 @@ pretty_print_file :: proc(file: ^ast.File) {
     defer strings.builder_destroy(&b)
     p := Printer{ prepend = b }
 
-    fmt.printf("%vFile: %v\n", strings.to_string(p.prepend), file.fullpath)
-    fmt.printf("%vPackage: %v\n", strings.to_string(p.prepend), file.pkg_name)
-    fmt.printf("%v%v warnings\n%v errors\n\n", strings.to_string(p.prepend), file.syntax_warning_count, file.syntax_warning_count)
+    printlnf(&p, "File: %s", file.fullpath)
+    printlnf(&p, "Package: %s", file.pkg_name)
+    printlnf(&p, "%v warnings", file.syntax_warning_count)
+    printlnf(&p, "%v errors", file.syntax_warning_count)
+    fmt.println()
 
-    fmt.printf("Declarations:\n")
+    println(&p, "Declarations:")
     strings.write_string(&p.prepend, "  ")
     pretty_print_list(&p, file.decls[:])
     strings.builder_reset(&p.prepend)
@@ -60,9 +73,9 @@ pretty_print_expr :: proc(p: ^Printer, expr: ^ast.Expr) {
 
     #partial switch e in expr.derived_expr {
     case ^Ident:
-        fmt.printf("%vIdentifier: %v\n", strings.to_string(p.prepend), e.name)
+        printlnf(p, "Identifier: %s", e.name)
     case:
-        fmt.printf("%v%#v", strings.to_string(p.prepend), expr.derived_expr)
+        printlnf(p, "%#v", expr.derived_expr)
     }
 }
 
@@ -73,9 +86,9 @@ pretty_print_stmt :: proc(p: ^Printer, stmt: ^ast.Stmt) {
     case ^Value_Decl:
         pretty_print_list(p, s.names[:])
     case ^Import_Decl:
-        fmt.printf("%vImport: %v\n", strings.to_string(p.prepend), s.fullpath)
+        printlnf(p, "Import: %s", s.fullpath)
     case:
-        fmt.printf("%v%#v\n\n", strings.to_string(p.prepend), stmt.derived_stmt)
+        printlnf(p, "%#v", stmt.derived_stmt)
     }
 }
 
