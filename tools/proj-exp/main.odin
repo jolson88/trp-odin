@@ -41,7 +41,9 @@ Printer :: struct {
 }
 
 pretty_print_file :: proc(file: ^ast.File) {
-    p := Printer{ prepend = strings.builder_make() }
+    b := strings.builder_make()
+    defer strings.builder_destroy(&b)
+    p := Printer{ prepend = b }
 
     fmt.printf("%vFile: %v\n", strings.to_string(p.prepend), file.fullpath)
     fmt.printf("%vPackage: %v\n", strings.to_string(p.prepend), file.pkg_name)
