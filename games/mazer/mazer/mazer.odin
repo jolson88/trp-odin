@@ -16,16 +16,14 @@ RESPAWN_FREQ        :: 2
 
 current_dt   : f64 = 0 // The number of seconds since last frame
 current_theta: f32 = 0 // A 1hz counter (range of [0,2PI])
-current_phase: f32 = 0 // The cos value of the current_theta in any given frame
+
+Player_Flags :: enum {Ultimate, Respawning}
+player_state: bit_set[Player_Flags]
 
 font    : rl.Font
 position: rl.Vector2
 size    : rl.Vector2
 velocity: rl.Vector2
-
-// TODO: Turn into bit set
-ult_active: bool = false
-respawning: bool = false
 
 run :: proc() {
     using rl
@@ -61,7 +59,7 @@ cos_freq :: proc(freq_mult: f32) -> f32 {
 }
 
 // HACK: Remove once not needed (this is just for prototyping)
-state_timer := 2.0
+kb_debounce := 0.5
 
 handle_input :: proc() {
     using rl
@@ -71,16 +69,18 @@ handle_input :: proc() {
     if IsKeyDown(KeyboardKey.UP)    do velocity.y = -1
     if IsKeyDown(KeyboardKey.DOWN)  do velocity.y =  1
 
-    // TODO: Change to key presses for these controls
-    state_timer -= current_dt
-    if IsKeyDown(KeyboardKey.R) && state_timer <= 0 {
-        state_timer = 2.0
-        ult_active = !ult_active
+    kb_debounce -= current_dt
+    if IsKeyDown(KeyboardKey.R) && kb_debounce <= 0 {
+        if kb_debounce <= 0 do kb_debounce = 0.2
+
+        player_state ~= {.Ultimate}
     }
-    if IsKeyDown(KeyboardKey.T) && state_timer <= 0{
-        state_timer = 2.0
-        respawning = !respawning
+    if IsKeyDown(KeyboardKey.T) && kb_debounce <= 0{
+        if kb_debounce <= 0 do kb_debounce = 0.2
+
+        player_state ~= {.Respawning}
     }
+
 }
 
 update :: proc() {
@@ -105,7 +105,7 @@ draw :: proc() {
 draw_player :: proc() {
     using rl
 
-    if ult_active {
+    if .Ultimate in player_state {
         {
             BeginBlendMode(BlendMode.ADDITIVE)
             defer EndBlendMode()
@@ -121,7 +121,7 @@ draw_player :: proc() {
                             i32(size.x), i32(size.y),
                             RED)
         }
-    } else if respawning {
+    } else if .Respawning in player_state {
         theta := u8(cos_freq(RESPAWN_FREQ) * 255)
         DrawRectangle(i32(position.x), i32(position.y),
                         i32(size.x), i32(size.y),
