@@ -8,6 +8,7 @@ import rl "vendor:raylib"
 WINDOW_WIDTH  :: 1024
 WINDOW_HEIGHT :: 768
 FONT_SIZE     :: 16
+DEBUG_COLOR   :: rl.MAGENTA
 
 BOARD_START_X :: 388
 BOARD_START_Y :: 30
@@ -16,7 +17,7 @@ ROWS          :: 44
 COLUMNS       :: 38
 
 current_theta := f32(0) // A 1hz counter (range of [0,2PI])
-show_debug    := true
+show_debug    := false
 
 font: rl.Font
 
@@ -65,8 +66,33 @@ draw :: proc() {
         defer EndDrawing()
         ClearBackground(BLACK)
 
+        draw_board()
+
         if show_debug do draw_debug()
     }
+}
+
+draw_board :: proc() {
+    using rl
+    
+    for row in 0..<ROWS {
+        for column in 0..<COLUMNS {
+            r := GetRandomValue(0, 255)
+            g := GetRandomValue(0, 255)
+            b := GetRandomValue(0, 255)
+            c := Color{ u8(r), u8(g), u8(b), 255 }
+            
+            x := BOARD_START_X + column * CELL_SIZE
+            y := BOARD_START_Y + row * CELL_SIZE
+            DrawRectangle(i32(x), i32(y), CELL_SIZE, CELL_SIZE, c)
+        }
+    }
+
+    DrawRectangleLines(BOARD_START_X,
+        BOARD_START_Y, 
+        COLUMNS * CELL_SIZE,
+        ROWS * CELL_SIZE,
+        GREEN)
 }
 
 draw_debug :: proc() {
@@ -75,14 +101,14 @@ draw_debug :: proc() {
     x := i32(BOARD_START_X)
     y := i32(BOARD_START_Y)
     for i in 0..=COLUMNS {
-        DrawLine(x, y, x, y + ROWS * CELL_SIZE, GRAY)
+        DrawLine(x, y, x, y + ROWS * CELL_SIZE, DEBUG_COLOR)
         x += CELL_SIZE
     }
 
     x = BOARD_START_X
     y = BOARD_START_Y
     for i in 0..=ROWS {
-        DrawLine(x, y, x + COLUMNS * CELL_SIZE, y, GRAY)
+        DrawLine(x, y, x + COLUMNS * CELL_SIZE, y, DEBUG_COLOR)
         y += CELL_SIZE
     }
 }
