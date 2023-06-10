@@ -15,11 +15,8 @@ ABERRATION_SIZE     :: 5
 ULT_FREQ            :: 3
 RESPAWN_FREQ        :: 2
 
-Player_Flags :: enum {Ultimate, Respawning, Firing}
-
 current_dt   :  f64 = 0 // The number of seconds since last frame
 current_theta:  f32 = 0 // A 1hz counter (range of [0,2PI])
-player_state :  bit_set[Player_Flags]
 
 font    : rl.Font
 
@@ -27,7 +24,11 @@ font    : rl.Font
 position: rl.Vector2
 size    : rl.Vector2
 velocity: rl.Vector2
-fire_rate := f64(0.4)
+
+in_ultimate := false
+invincible  := false
+is_firing   := false
+fire_rate   := f64(0.4)
 
 Bullet :: struct {
     position: rl.Vector2
@@ -90,11 +91,11 @@ move_left :: proc() {
 }
 
 start_firing :: proc() {
-    player_state += {.Firing}
+    is_firing = true
 }
 
 stop_firing :: proc() {
-    player_state -= {.Firing}
+    is_firing = false
 }
 
 update :: proc() {
@@ -107,7 +108,7 @@ update_player :: proc() {
     velocity *= 1 - PLAYER_DRAG * f32(current_dt)
 
     fire_rate = fire_rate - current_dt
-    if fire_rate < 0 && player_is(.Firing) {
+    if fire_rate < 0 && is_firing {
         // TODO(trp): Extract to fire_bullet function
         b := Bullet{
             position = rl.Vector2{ position.x + size.x / 2, position.y },
@@ -118,10 +119,6 @@ update_player :: proc() {
         
         fire_rate = 0.4
     }
-}
-
-player_is :: proc(f: Player_Flags) -> bool {
-    return f in player_state
 }
 
 update_bullets :: proc() {

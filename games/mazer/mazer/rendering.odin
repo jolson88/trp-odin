@@ -34,11 +34,10 @@ draw_bullet :: proc(bullet: ^Bullet) {
 draw_player :: proc() {
     using rl
 
-    if player_is(.Ultimate) {
+    if in_ultimate {
+        aberration := phase(ULT_FREQ) * ABERRATION_SIZE
 
         BeginBlendMode(BlendMode.ADDITIVE)
-
-        aberration := phase(ULT_FREQ) * ABERRATION_SIZE
         DrawRectangle(i32(position.x - aberration), i32(position.y - aberration),
                         i32(size.x), i32(size.y),
                         BLUE)
@@ -48,10 +47,9 @@ draw_player :: proc() {
         DrawRectangle(i32(position.x + aberration), i32(position.y + aberration),
                         i32(size.x), i32(size.y),
                         RED)
-
         EndBlendMode()
 
-    } else if player_is(.Respawning) {
+    } else if invincible {
 
         theta := u8(phase(RESPAWN_FREQ) * 255)
         DrawRectangle(i32(position.x), i32(position.y),
