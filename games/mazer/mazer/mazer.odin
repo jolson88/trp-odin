@@ -31,9 +31,9 @@ is_firing   := false
 fire_rate   := f64(0.4)
 
 Bullet :: struct {
-    position: rl.Vector2
-    size    : rl.Vector2
-    velocity: rl.Vector2
+    position: rl.Vector2,
+    size    : rl.Vector2,
+    velocity: rl.Vector2,
 }
 
 bullets : [dynamic]Bullet
