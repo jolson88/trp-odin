@@ -9,14 +9,22 @@ main :: proc() {
         return
     }
 
-    category := os.args[1]
-    action   := os.args[2]
+    action   := os.args[1]
+    category := os.args[2]
     params   := os.args[3:]
 
-    fmt.println("Category: "  , category)
-    fmt.println("Action: "    , action)
-    fmt.println("Parameters: ", params)
+    if action == "new" {
+        create_project(params[0], category)
+    }
+}
 
+create_project :: proc(name: string, category: string) {
+    fmt.println("Creating new project")
+    fmt.println("Name: ", name)
+    fmt.println("Category: ", category)
+}
+
+walk_dir :: proc() {
     dir := os.get_current_directory()
     fmt.println("Current directory: ", dir)
 
@@ -44,11 +52,11 @@ main :: proc() {
 }
 
 print_usage :: proc() {
-    fmt.println("trp-odin [category] [action] [parameters]")
+    fmt.println("trp-odin [action] [category] [parameters]")
     fmt.println()
-    fmt.println("Supported categories: games, tools, exps")
+    fmt.println("Supported categories: game, tool, exp")
     fmt.println()
     fmt.println("Examples:")
-    fmt.println("\t- Create a new tool: `trp-odin tools new my-editor`")
-    fmt.println("\t- Run a game: `trp-odin games run mazer`")
+    fmt.println("\t- Create a new tool: `trp-odin new tool my-editor`")
+    fmt.println("\t- Run a game: `trp-odin run game mazer`")
 }

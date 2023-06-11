@@ -9,7 +9,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/trp-odin.exe",
-      "args": [],
+      "args": ["new", "game", "test"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
