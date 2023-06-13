@@ -2,10 +2,13 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:path/filepath"
+
+dirs := map[string]string{ "game" = "games", "tool" = "tools", "exp" = "exps" }
 
 main :: proc() {
     if len(os.args) < 4 {
-        print_usage()
+        print_usage_and_exit()
         return
     }
 
@@ -19,15 +22,39 @@ main :: proc() {
 }
 
 create_project :: proc(name: string, category: string) {
-    fmt.println("Creating new project")
-    fmt.println("Name: ", name)
-    fmt.println("Category: ", category)
+    dir, ok := dirs[category]
+    if !ok {
+        fmt.eprintln("Did not recognize category", category)
+        print_usage_and_exit()
+    }
+
+    fmt.printf("\nCreating %v\n\n", name)
+    cwd := os.get_current_directory()
+    project_dir  := filepath.join([]string{cwd, dir, name })
+    template_dir := filepath.join([]string{cwd, dir, "_template"})
+
+    dir_exists := os.exists(template_dir)
+    if !dir_exists {
+        fmt.eprintln("Could not find template for category:", category)
+        os.exit(1)
+    }
+
+    dir_exists = os.exists(project_dir)
+    if dir_exists {
+        fmt.eprintln("Project already exists:", project_dir)
+        os.exit(1)
+    }
+
+    create_from_template(template_dir, project_dir)
 }
 
-walk_dir :: proc() {
-    dir := os.get_current_directory()
-    fmt.println("Current directory: ", dir)
+create_from_template :: proc(template_dir: string, target_dir: string) {
+    fmt.println("Copying from project template")
+    fmt.println("Template: ", template_dir)
+    fmt.println("Target: ", target_dir)
+}
 
+walk_dir :: proc(dir: string) {
     f: os.Handle
     err := os.ERROR_NONE
     f, err = os.open(dir)
@@ -51,12 +78,13 @@ walk_dir :: proc() {
     }
 }
 
-print_usage :: proc() {
-    fmt.println("trp-odin [action] [category] [parameters]")
-    fmt.println()
-    fmt.println("Supported categories: game, tool, exp")
-    fmt.println()
-    fmt.println("Examples:")
-    fmt.println("\t- Create a new tool: `trp-odin new tool my-editor`")
-    fmt.println("\t- Run a game: `trp-odin run game mazer`")
+print_usage_and_exit :: proc() {
+    fmt.eprintln("trp-odin [action] [category] [parameters]")
+    fmt.eprintln()
+    fmt.eprintln("Supported categories: game, tool, exp")
+    fmt.eprintln()
+    fmt.eprintln("Examples:")
+    fmt.eprintln("\t- Create a new tool: `trp-odin new tool my-editor`")
+    fmt.eprintln("\t- Run a game: `trp-odin run game mazer`")
+    os.exit(1)
 }
