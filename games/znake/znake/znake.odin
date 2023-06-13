@@ -19,7 +19,8 @@ COLUMNS       :: 38
 current_theta := f32(0) // A 1hz counter (range of [0,2PI])
 show_debug    := false
 
-font: rl.Font
+font : rl.Font
+cells: [ROWS * COLUMNS]int
 
 run :: proc() {
     using rl
@@ -28,6 +29,8 @@ run :: proc() {
     
     font = LoadFont("fonts/8-bit.png")
     defer UnloadFont(font)
+
+    game_init()
 
     tick := time.tick_now()
     current_dt := f64(0)
@@ -48,6 +51,24 @@ phase :: proc(hz: f32) -> f32 {
     return (math.cos(current_theta * hz) + 1) * 0.5
 }
 
+cell_get :: proc(row, col: int) -> int {
+    return cells[row * col + col]
+}
+
+cell_set :: proc(row, col, val: int) {
+    cells[row * col + col] = val
+}
+
+game_init :: proc() {
+    for _, i in cells {
+        cells[i] = 0
+    }
+
+    start_row := ROWS    * 0.5 + rl.GetRandomValue(-5, 5)
+    start_col := COLUMNS * 0.5 + rl.GetRandomValue(-5, 5)
+    cell_set(int(start_row), int(start_col), 1)
+}
+
 handle_input :: proc() {
     using rl
     
@@ -59,56 +80,46 @@ update :: proc(current_dt: f64) {
 }
 
 draw :: proc() {
-    using rl
+    rl.BeginDrawing()
+    defer rl.EndDrawing()
+    rl.ClearBackground(rl.BLACK)
 
-    {
-        BeginDrawing()
-        defer EndDrawing()
-        ClearBackground(BLACK)
-
-        draw_board()
-
-        if show_debug do draw_debug()
-    }
+    draw_cells()
+    draw_grid()
 }
 
-draw_board :: proc() {
-    using rl
-    
+draw_cells :: proc() {
     for row in 0..<ROWS {
         for column in 0..<COLUMNS {
-            r := GetRandomValue(0, 255)
-            g := GetRandomValue(0, 255)
-            b := GetRandomValue(0, 255)
-            c := Color{ u8(r), u8(g), u8(b), 255 }
-            
+            c := rl.BLACK
+            life := cell_get(row, column)
+            if (life > 0) do c = rl.WHITE
+
             x := BOARD_START_X + column * CELL_SIZE
             y := BOARD_START_Y + row * CELL_SIZE
-            DrawRectangle(i32(x), i32(y), CELL_SIZE, CELL_SIZE, c)
+            rl.DrawRectangle(i32(x), i32(y), CELL_SIZE, CELL_SIZE, c)
         }
     }
-
-    DrawRectangleLines(BOARD_START_X,
-        BOARD_START_Y, 
-        COLUMNS * CELL_SIZE,
-        ROWS * CELL_SIZE,
-        GREEN)
 }
 
-draw_debug :: proc() {
-    using rl
-
+draw_grid :: proc() {
     x := i32(BOARD_START_X)
     y := i32(BOARD_START_Y)
     for i in 0..=COLUMNS {
-        DrawLine(x, y, x, y + ROWS * CELL_SIZE, DEBUG_COLOR)
+        rl.DrawLine(x, y, x, y + ROWS * CELL_SIZE, rl.GRAY)
         x += CELL_SIZE
     }
 
     x = BOARD_START_X
     y = BOARD_START_Y
     for i in 0..=ROWS {
-        DrawLine(x, y, x + COLUMNS * CELL_SIZE, y, DEBUG_COLOR)
+        rl.DrawLine(x, y, x + COLUMNS * CELL_SIZE, y, rl.GRAY)
         y += CELL_SIZE
     }
+
+    rl.DrawRectangleLines(BOARD_START_X,
+        BOARD_START_Y, 
+        COLUMNS * CELL_SIZE,
+        ROWS * CELL_SIZE,
+        rl.GREEN)
 }
