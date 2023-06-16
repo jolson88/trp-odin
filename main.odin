@@ -3,6 +3,8 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:path/filepath"
+import "core:slice"
+import "core:strings"
 
 Project_Request :: struct {
     name: string,
@@ -12,10 +14,12 @@ Project_Request :: struct {
 
 File_Request :: struct {
     path: string,
-    contents: string,
+    src_path: string,
+    content: []byte,
     is_dir: bool,
 }
 
+txts := []string{ ".bat", ".json", ".odin", ".txt" }
 dirs := map[string]string{ "game" = "games", "tool" = "tools", "exp" = "exps" }
 
 main :: proc() {
@@ -30,12 +34,34 @@ main :: proc() {
 
     if action == "new" {
         project := Project_Request{ name = params[0] }
-        create_project(&project, category)
-        fmt.println(project)
+        dry_run := true if len(params) > 1 && params[1] == "--dry-run" else false
+        
+        fmt.println("Creating project:", project.name)
+        build_project(&project, category)
+        if dry_run {
+            print_project(&project)
+        } else {
+            create_project(&project)
+        }
     }
 }
 
-create_project :: proc(project: ^Project_Request, category: string) {
+create_project :: proc(project: ^Project_Request) {
+    fmt.println("Creating files...")
+}
+
+print_project :: proc(project: ^Project_Request) {
+    for fr in project.files {
+        if fr.is_dir {
+            fmt.println("Create directory:", fr.path)
+        } else {
+            fmt.println("Create file:", fr.path)
+            fmt.println("  Size (bytes):", len(fr.content))
+        }
+    }
+}
+
+build_project :: proc(project: ^Project_Request, category: string) {
     dir, ok := dirs[category]
     if !ok {
         fmt.eprintln("Did not recognize category", category)
@@ -59,19 +85,20 @@ create_project :: proc(project: ^Project_Request, category: string) {
     }
     
     project.path = project_dir
-    walk_template_dir(project, "", template_dir)
+    build_project_dir(project, "", template_dir)
 }
 
-walk_template_dir :: proc(project: ^Project_Request, dest_dir_rel: string, source_dir: string) {
-    dir_path := filepath.join([]string{project.path, dest_dir_rel})
+build_project_dir :: proc(project: ^Project_Request, target_dir_rel: string, source_path: string) {
+    target_path := filepath.join([]string{project.path, target_dir_rel})
     append(&project.files, File_Request{
-        path   = detemplatize(project, dir_path),
-        is_dir = true,
+        path     = detemplatize(project, target_path),
+        src_path = source_path,
+        is_dir   = true,
     })
     
     f: os.Handle
     err := os.ERROR_NONE
-    f, err = os.open(source_dir)
+    f, err = os.open(source_path)
     if err != os.ERROR_NONE {
         fmt.eprintln("Could not open directory for reading", err)
         os.exit(1)
@@ -84,27 +111,43 @@ walk_template_dir :: proc(project: ^Project_Request, dest_dir_rel: string, sourc
         fmt.eprintln("Could not read directory", err)
         os.exit(1)
     }
-    defer os.file_info_slice_delete(fis)
 
     for fi in fis {
         file_name := detemplatize(project, fi.name)
         if fi.is_dir {
-            walk_template_dir(project, filepath.join([]string{dest_dir_rel, file_name}), fi.fullpath)
-        } else {
-            append(&project.files, File_Request{
-                path = filepath.join([]string{project.path, dest_dir_rel, file_name}),
-                contents = read_file_contents(project, fi.fullpath),
-                is_dir = false,
-            })
+            build_project_dir(project, filepath.join([]string{target_dir_rel, file_name}), fi.fullpath)
+            continue
         }
+    
+        append(&project.files, File_Request{
+            path     = filepath.join([]string{project.path, target_dir_rel, file_name}),
+            src_path = fi.fullpath,
+            content  = read_file_contents(project, fi.fullpath),
+            is_dir   = false,
+        })
     }
 }
 
-read_file_contents :: proc(project: ^Project_Request, path: string) -> string {
-    return "TODO"
+read_file_contents :: proc(project: ^Project_Request, path: string) -> []byte {
+    contents, ok := os.read_entire_file(path)
+    if !ok {
+        fmt.eprintln("Could not read contents of file", path)
+        os.exit(1)
+    }
+
+    ext := filepath.ext(path)
+    if !slice.contains(txts, ext) do return contents
+    
+    new_contents, _ := strings.replace_all(string(contents), "!@#PROJECT", project.name)
+    return transmute([]byte)new_contents
 }
 
 detemplatize :: proc(project: ^Project_Request, original: string) -> string {
+    if strings.index(original, "!@#PROJECT") >= 0 {
+        new_string, _ := strings.replace_all(original, "!@#PROJECT", project.name)
+        return new_string
+    }
+    
     return original
 }
 
