@@ -51,16 +51,14 @@ create_project :: proc(project: ^Project_Request) {
         if fr.is_dir {
             err := os.make_directory(fr.path)
             if err != os.ERROR_NONE {
-                fmt.eprintln("Could not create destination directory", fr.path, err)
-                os.exit(1)
+                report_and_exit("Could not create destination directory", fr.path, err)
             }
             continue
         }
         
         ok := os.write_entire_file(fr.path, fr.content)
         if !ok {
-            fmt.eprintln("Could not write file", fr.path, len(fr.content))
-            os.exit(1)
+            report_and_exit("Could not write file", fr.path, len(fr.content))
         }
     }
 
@@ -92,14 +90,12 @@ build_project :: proc(project: ^Project_Request, category: string) {
 
     dir_exists := os.exists(template_dir)
     if !dir_exists {
-        fmt.eprintln("Could not find template for category:", category)
-        os.exit(1)
+        report_and_exit("Could not find template for category:", category)
     }
 
     dir_exists = os.exists(project_dir)
     if dir_exists {
-        fmt.eprintln("Project already exists:", project_dir)
-        os.exit(1)
+        report_and_exit("Project already exists:", project_dir)
     }
     
     project.path = project_dir
@@ -118,16 +114,14 @@ build_project_dir :: proc(project: ^Project_Request, target_dir_rel: string, sou
     err := os.ERROR_NONE
     f, err = os.open(source_path)
     if err != os.ERROR_NONE {
-        fmt.eprintln("Could not open directory for reading", err)
-        os.exit(1)
+        report_and_exit("Could not open directory for reading", err)
     }
     defer os.close(f)
 
     fis: []os.File_Info
     fis, err = os.read_dir(f, -1) // -1 -> read all entries
     if err != os.ERROR_NONE {
-        fmt.eprintln("Could not read directory", err)
-        os.exit(1)
+        report_and_exit("Could not read directory", err)
     }
 
     for fi in fis {
@@ -149,8 +143,7 @@ build_project_dir :: proc(project: ^Project_Request, target_dir_rel: string, sou
 read_file_contents :: proc(project: ^Project_Request, path: string) -> []byte {
     contents, ok := os.read_entire_file(path)
     if !ok {
-        fmt.eprintln("Could not read contents of file", path)
-        os.exit(1)
+        report_and_exit("Could not read contents of file", path)
     }
 
     ext := filepath.ext(path)
@@ -167,6 +160,11 @@ detemplatize :: proc(project: ^Project_Request, original: string) -> string {
     }
     
     return original
+}
+
+report_and_exit :: proc(s: string, args: ..any) {
+    fmt.eprintln(s, args)
+    os.exit(1)
 }
 
 report_usage_and_exit :: proc() {
