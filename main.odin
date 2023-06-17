@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:path/filepath"
 import "core:slice"
@@ -22,11 +23,18 @@ File_Request :: struct {
 txts := []string{ ".bat", ".json", ".odin", ".txt" }
 dirs := map[string]string{ "game" = "games", "tool" = "tools", "exp" = "exps" }
 
+
 main :: proc() {
     if len(os.args) < 4 {
         report_usage_and_exit()
         return
     }
+
+    // Our templates are super small, so 8MB should be just fine
+    scratch: mem.Scratch_Allocator;
+    mem.scratch_allocator_init(&scratch, 8 * mem.Megabyte, context.allocator)
+    context.allocator = mem.scratch_allocator(&scratch)
+    defer mem.scratch_allocator_destroy(&scratch)
 
     action   := os.args[1]
     category := os.args[2]
@@ -145,7 +153,6 @@ read_file_contents :: proc(project: ^Project_Request, path: string) -> []byte {
     if !ok {
         report_and_exit("Could not read contents of file", path)
     }
-
     ext := filepath.ext(path)
     if !slice.contains(txts, ext) do return contents
     
