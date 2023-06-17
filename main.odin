@@ -24,7 +24,7 @@ dirs := map[string]string{ "game" = "games", "tool" = "tools", "exp" = "exps" }
 
 main :: proc() {
     if len(os.args) < 4 {
-        print_usage_and_exit()
+        report_usage_and_exit()
         return
     }
 
@@ -56,7 +56,7 @@ create_project :: proc(project: ^Project_Request) {
             }
             continue
         }
-
+        
         ok := os.write_entire_file(fr.path, fr.content)
         if !ok {
             fmt.eprintln("Could not write file", fr.path, len(fr.content))
@@ -83,7 +83,7 @@ build_project :: proc(project: ^Project_Request, category: string) {
     dir, ok := dirs[category]
     if !ok {
         fmt.eprintln("Did not recognize category", category)
-        print_usage_and_exit()
+        report_usage_and_exit()
     }
 
     cwd := os.get_current_directory()
@@ -169,7 +169,7 @@ detemplatize :: proc(project: ^Project_Request, original: string) -> string {
     return original
 }
 
-print_usage_and_exit :: proc() {
+report_usage_and_exit :: proc() {
     fmt.eprintln("trp-odin [action] [category] [parameters]")
     fmt.eprintln()
     fmt.eprintln("Supported categories: game, tool, exp")
