@@ -34,30 +34,48 @@ main :: proc() {
 
     if action == "new" {
         project := Project_Request{ name = params[0] }
-        dry_run := true if len(params) > 1 && params[1] == "--dry-run" else false
         
         fmt.println("Creating project:", project.name)
         build_project(&project, category)
-        if dry_run {
-            print_project(&project)
-        } else {
-            create_project(&project)
-        }
+
+        is_dry_run := true if slice.contains(params, "--dry-run") else false
+        fn := print_project if is_dry_run else create_project
+        fn(&project)
     }
 }
 
 create_project :: proc(project: ^Project_Request) {
     fmt.println("Creating files...")
+
+    for fr in project.files {
+        if fr.is_dir {
+            err := os.make_directory(fr.path)
+            if err != os.ERROR_NONE {
+                fmt.eprintln("Could not create destination directory", fr.path, err)
+                os.exit(1)
+            }
+            continue
+        }
+
+        ok := os.write_entire_file(fr.path, fr.content)
+        if !ok {
+            fmt.eprintln("Could not write file", fr.path, len(fr.content))
+            os.exit(1)
+        }
+    }
+
+    fmt.println("Finished creating project from template:", project.path)
 }
 
 print_project :: proc(project: ^Project_Request) {
     for fr in project.files {
         if fr.is_dir {
             fmt.println("Create directory:", fr.path)
-        } else {
-            fmt.println("Create file:", fr.path)
-            fmt.println("  Size (bytes):", len(fr.content))
+            continue
         }
+        
+        fmt.println("Create file:", fr.path)
+        fmt.println("  Size (bytes):", len(fr.content))
     }
 }
 
