@@ -16,12 +16,12 @@ PADDING       :: 4
 
 current_theta := f32(0) // A 1hz counter (range of [0,2PI])
 
-start_h := 139
-start_s := 240
-start_v := 194
-final_h := 199
-final_s := 240
-final_v := 211
+start_h := 10
+start_s := 170
+start_v := 240
+final_h := 180
+final_s := 230
+final_v := 240
 
 main :: proc() {
     rl.InitWindow(i32(WINDOW_WIDTH), i32(WINDOW_HEIGHT), "HSV");
