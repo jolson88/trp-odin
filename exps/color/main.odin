@@ -27,6 +27,9 @@ main :: proc() {
     rl.InitWindow(i32(WINDOW_WIDTH), i32(WINDOW_HEIGHT), "HSV");
     defer rl.CloseWindow();
     
+    rl.SetTargetFPS(30)
+    rl.SetConfigFlags({ rl.ConfigFlag.VSYNC_HINT })
+    
     tick := time.tick_now()
     current_dt := f64(0)
     for !rl.WindowShouldClose() {
@@ -46,9 +49,7 @@ phase :: proc(hz: f32, offset: f32 = 0) -> f32 {
 }
 
 handle_input :: proc() {
-    using rl
-    
-    //if IsKeyPressed(KeyboardKey.F1) do show_debug = !show_debug
+
 }
 
 update :: proc(current_dt: f64) {
@@ -60,6 +61,7 @@ draw :: proc() {
     defer rl.EndDrawing()
     rl.ClearBackground(rl.BLACK)
 
+    PHASE_INC := f32(0.05)
     for row in 0..<ROWS {
         for column in 0..<COLUMNS {
             t := (f32(row) / f32(ROWS) + f32(column) / f32(COLUMNS)) * 0.5
@@ -70,7 +72,7 @@ draw :: proc() {
             x := BOARD_START_X + column * CELL_SIZE + column * PADDING
             y := BOARD_START_Y + row * CELL_SIZE + row * PADDING
             
-            size := math.lerp(f32(4), f32(CELL_SIZE), phase(0.5, t * math.TAU))
+            size := math.lerp(f32(4), f32(CELL_SIZE), phase(0.5 + f32(row) * PHASE_INC, t * math.TAU))
             offset := (CELL_SIZE - size) * 0.5
             rl.DrawRectangle(i32(f32(x) + offset), i32(f32(y) + offset), i32(size), i32(size), rl.ColorFromHSV(h, s / 255, v / 255))
         }
