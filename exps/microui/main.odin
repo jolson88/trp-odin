@@ -37,6 +37,15 @@ main :: proc() {
     atlas_texture = rl.LoadTextureFromImage(atlas_image)
     
     for !rl.WindowShouldClose() {
+        // Handle input
+        mouse_x := i32(rl.GetMouseX())
+        mouse_y := i32(rl.GetMouseY())
+        mu.input_mouse_move(&ctx, mouse_x, mouse_y)
+
+        if rl.IsMouseButtonPressed(.LEFT)  do mu.input_mouse_down(&ctx, mouse_x, mouse_y, .LEFT)
+        if rl.IsMouseButtonReleased(.LEFT) do mu.input_mouse_up(&ctx, mouse_x, mouse_y, .LEFT)
+        
+        // Rendering
         mu.begin(&ctx)
         all_windows(&ctx)
         mu.end(&ctx)
