@@ -1,2 +1,4 @@
 **/*.exe
+**/*.bin
 **/*.pdb
+**/*.DS_Store
