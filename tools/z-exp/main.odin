@@ -19,22 +19,22 @@ main :: proc() {
 }
 
 ZState :: struct {
-	mem:        []byte,
+	mem:      []byte,
 
 	// HEADER
-	version:    u8,
-	high_mem:   u16,
-	init_pc:    u16,
-	dict_loc:   u16,
-	obj_loc:    u16,
-	glob_loc:   u16,
-	static_mem: u16,
-	abbr_loc:   u16,
-	file_len:   u32,
-	checksum:   u16,
+	version:  u8,
+	high_mem: u16,
+	init_pc:  u16,
+	dict_loc: u16,
+	obj_loc:  u16,
+	glob_loc: u16,
+	stat_mem: u16,
+	abbr_loc: u16,
+	file_len: u32,
+	checksum: u16,
 
 	// OBJECTS
-	prop_def:   []u16,
+	prop_def: []u16,
 }
 
 init_state :: proc(state: ^ZState, data: []byte) {
@@ -51,7 +51,7 @@ parse_header :: proc(state: ^ZState) {
 	state.dict_loc = read_word(state, 0x08)
 	state.obj_loc = read_word(state, 0x0A)
 	state.glob_loc = read_word(state, 0xC)
-	state.static_mem = read_word(state, 0x0E)
+	state.stat_mem = read_word(state, 0x0E)
 	state.abbr_loc = read_word(state, 0x18)
 	state.file_len = u32(read_word(state, 0x1A)) * 2
 	state.checksum = read_word(state, 0x1C)
@@ -72,23 +72,28 @@ parse_prop_defaults :: proc(state: ^ZState) {
 }
 
 print_header :: proc(state: ^ZState) {
-	fmt.printf("Version:     %v\n", state.version)
-	fmt.printf("File Length: %v\n", state.file_len)
-	fmt.printf("Checksum:    %v\n\n", state.checksum)
-	fmt.printf("High mem:    0x%4X\n", state.high_mem)
-	fmt.printf("Static mem:  0x%4X\n", state.static_mem)
-	fmt.printf("Init pc:     0x%4X\n\n", state.init_pc)
-	fmt.printf("Dict loc:    0x%4X\n", state.dict_loc)
-	fmt.printf("Obj loc:     0x%4X\n", state.obj_loc)
-	fmt.printf("Globals loc: 0x%4X\n", state.glob_loc)
-	fmt.printf("Abbrevs loc: 0x%4X\n", state.abbr_loc)
+	fmt.printf("------- HEADER -------\n")
+	fmt.printf("Version:  %v\n", state.version)
+	fmt.printf("File Len: %v\n", state.file_len)
+	fmt.printf("Checksum: %v\n\n", state.checksum)
+	fmt.printf("High Mem: 0x%4X\n", state.high_mem)
+	fmt.printf("Stat Mem: 0x%4X\n", state.stat_mem)
+	fmt.printf("Init PC:  0x%4X\n\n", state.init_pc)
+	fmt.printf("Dict Loc: 0x%4X\n", state.dict_loc)
+	fmt.printf("Objs Loc: 0x%4X\n", state.obj_loc)
+	fmt.printf("Glob Loc: 0x%4X\n", state.glob_loc)
+	fmt.printf("Abbr Loc: 0x%4X\n\n", state.abbr_loc)
 }
 
 print_prop_defaults :: proc(state: ^ZState) {
-	fmt.printf("\nProp defaults:\n-------\n")
+	fmt.printf("---- PROP DEFAULTS ----\n")
 	for i := 0; i < len(state.prop_def); i += 1 {
-		fmt.printf("[%2d]: %5d\n", i + 1, state.prop_def[i])
+		fmt.printf("[%2d]: %5d ", i + 1, state.prop_def[i])
+		if (i + 1) % 5 == 0 {
+			fmt.print("\n")
+		}
 	}
+	fmt.print("\n")
 }
 
 read_word :: proc(state: ^ZState, addr: u16) -> u16 {
